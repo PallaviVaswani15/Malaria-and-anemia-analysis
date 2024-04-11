@@ -1,0 +1,1143 @@
+---
+title: "Thesis"
+author: "Pallavi Vaswani"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+```
+```{r}
+install.packages("vctrs")
+```
+```{r}
+install.packages("kableExtra")
+```
+```{r}
+install.packages("plotly")
+
+```
+
+
+
+```{r}
+install.packages("cli")
+```
+
+
+
+```{r}
+
+folder_path <- "C:/Users/palla/Indiana University/Pabon-Rodriguez, Felix - Data-REDCap-Malaria"
+# OR
+folder_path <- "C:\\Users\\palla\\Indiana University\\Pabon-Rodriguez, Felix - Data-REDCap-Malaria"
+
+```
+
+
+```{r}
+# List all CSV files in the specified directory
+csv_files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+
+```
+
+
+```{r}
+# Print file names with an index
+cat(paste0(seq_along(csv_files), ": ", basename(csv_files), "\n"))
+
+```
+
+```{r}
+file_path1 <- csv_files[6]
+file_path2 <- csv_files[7] 
+```
+
+
+```{r}
+# Read the files
+risk_factors <- read.csv(file_path1)
+risk_factors_round24 <- read.csv(file_path2)
+```
+```{r}
+risk_factors
+```
+```{r}
+risk_factors_round24
+```
+
+
+```{r}
+# Assuming 'risk_factors' and 'risk_factors_round24' are your dataframes
+
+# Find matching record IDs
+matching_record_ids <- intersect(unique(risk_factors$`Record ID`), unique(risk_factors_round24$`Record ID`))
+
+# Loop through each matching record ID
+for (record_id in matching_record_ids) {
+  # Find indices of the last occurrence of the current record ID in risk_factors
+  last_occurrence_indices <- which(risk_factors$`Record ID` == record_id)
+  last_occurrence_index <- last_occurrence_indices[length(last_occurrence_indices)]
+  
+  # Subset rows from risk_factors_round24 for the current record ID
+  new_rows <- risk_factors_round24[risk_factors_round24$`Record ID` == record_id, ]
+  
+  # Append new rows to the last occurrence of the same record ID in risk_factors
+  risk_factors <- rbind(risk_factors[seq_len(last_occurrence_index), ], new_rows, risk_factors[(last_occurrence_index + 1):nrow(risk_factors), ])
+}
+
+# Now 'risk_factors' contains the merged dataset with new rows appended
+
+risk_factors
+
+```
+
+
+
+```{r}
+# Check the number of columns and column names in risk_factors
+print(ncol(risk_factors))
+print(names(risk_factors))
+
+# Check the number of columns and column names in risk_factors_round24
+print(ncol(risk_factors_round24))
+print(names(risk_factors_round24))
+
+```
+
+
+```{r}
+# Select specified columns from risk_factors
+risk_factors_subset <- risk_factors[, c("Age", "Risk.factors", "Bednet....Did.you.sleep.under.a.bednet.last.night.", "Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.")]
+
+# Select specified columns from risk_factors_round24
+risk_factors_round24_subset <- risk_factors_round24[, c("Age", "Risk.factors", "Bednet....Did.you.sleep.under.a.bednet.last.night.", "Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.")]
+
+# Merge the two subsets
+merged_data <- rbind(risk_factors_subset, risk_factors_round24_subset)
+merged_data
+```
+
+```{r}
+print(names(merged_data))
+```
+
+```{r}
+head(merged_data,5)
+```
+
+```{r}
+library(ggplot2)
+ggplot(merged_data, aes(x = Risk.factors)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  scale_x_discrete(labels = c("Yes" = "Yes", "No" = "No")) +  
+  labs(title = "Distribution of Risk Factors",
+       x = "Risk Factors",
+       y = "Count")
+```
+
+
+```{r}
+# Replace null values in Risk.factors column with "No"
+merged_data$Risk.factors[is.na(merged_data$Risk.factors)] <- "No"
+
+
+```
+
+```{r}
+merged_data$Risk.factors[is.na(merged_data$Risk.factors)] <- "No"
+```
+
+```{r}
+unique(merged_data$Risk.factors)
+```
+
+
+```{r}
+# Replace empty strings with "No" in the "Risk.factors" column
+merged_data$Risk.factors <- ifelse(merged_data$Risk.factors == "", "No", merged_data$Risk.factors)
+```
+
+```{r}
+unique(merged_data$Risk.factors)
+```
+
+
+```{r}
+ggplot(merged_data, aes(x = Risk.factors)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  scale_x_discrete(labels = c("Yes" = "Yes", "No" = "No")) +  # Custom labels for x-axis
+  labs(title = "Distribution of Risk Factors",
+       x = "Risk Factors",
+       y = "Count")
+```
+
+```{r}
+
+merged_data$Bednet....Did.you.sleep.under.a.bednet.last.night. <- ifelse(merged_data$Bednet....Did.you.sleep.under.a.bednet.last.night. == "", "No", merged_data$Bednet....Did.you.sleep.under.a.bednet.last.night.)
+# Plot for Bednet usage
+ggplot(merged_data, aes(x = Bednet....Did.you.sleep.under.a.bednet.last.night.)) +
+  geom_bar(fill = "lightgreen", color = "black") +
+  scale_x_discrete(labels = c("Yes" = "Yes", "No" = "No")) +  # Custom labels for x-axis
+  labs(title = "Bednet Usage",
+       x = "Did you sleep under a bednet last night?",
+       y = "Count")
+```
+
+
+
+```{r}
+unique_counts <- table(merged_data$Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.)
+
+# Print the counts
+print(unique_counts)
+# Replace blank values with "Unknown" in Traveled column
+merged_data$Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.[merged_data$Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography. == ""] <- "Unknown"
+
+# Calculate counts for each category
+category_counts <- table(merged_data$Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.)
+
+# Plot for Travel history
+ggplot(merged_data, aes(x = Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.)) +
+  geom_bar(fill = "coral", color = "black") +
+  scale_x_discrete(labels = c("Yes" = "Yes", "No" = "No", "Unknown" = "Unknown")) +  # Custom labels for x-axis
+  scale_y_continuous(limits = c(0, max(category_counts)), breaks = seq(0, max(category_counts), by = max(category_counts) / 10)) +  # Adjusting Y-axis limits and breaks
+  labs(title = "Travel History",
+       x = "Have you traveled outside Nandi County since the last Demography?",
+       y = "Count")
+
+
+
+```
+
+```{r}
+unique_counts <- table(merged_data$Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.)
+
+# Print the counts
+print(unique_counts)
+# Plot for Travel history with numbers on top of each bar
+ggplot(merged_data, aes(x = Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.)) +
+  geom_bar(aes(fill = Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.), color = "black", stat = "count") +
+  geom_text(aes(label = after_stat(count), y = after_stat(count)), stat = "count", vjust = -0.5, color = "black") +
+  scale_fill_manual(values = c("Yes" = "green", "No" = "red", "Unknown" = "grey")) +
+  scale_x_discrete(labels = c("Yes" = "Yes", "No" = "No", "Unknown" = "Unknown")) +
+  scale_y_continuous(limits = c(0, max(category_counts) + 10), breaks = seq(0, max(category_counts), by = max(category_counts) / 10)) +
+  labs(title = "Travel History",
+       x = "Have you traveled outside Nandi County since the last Demography?",
+       y = "Count") +
+  theme_minimal() +
+  theme(legend.position = "bottom") # Move the legend to the bottom
+
+```
+
+
+
+```{r}
+file_path3 <- csv_files[5]
+```
+
+
+
+
+```{r}
+passive_surv <- read.csv(file_path3, header = TRUE)
+
+```
+
+
+```{r}
+# Rename columns to replace periods with underscores
+colnames(passive_surv) <- gsub("\\.", "_", colnames(passive_surv))
+
+# Print the modified column names
+print(colnames(passive_surv))
+
+```
+
+
+
+```{r}
+# Specify the columns to be removed
+columns_to_remove <- c(
+    "Reader_1", "Microscopist_ID", "Form_Number", "Smear_Date", "P__falciparum", 
+    "P__malariae", "P__ovale", "P__vivax", "Gametocytes", "PF_200_wbc", 
+    "PM_200_wbc", "PO_200_wbc", "PV_200_wbc", "Gametocytes_200_wbc", 
+    "Reader_2", "Microscopist_ID_1", "Form_Number_1", "Smear_Date_1", 
+    "P__falciparum_1", "P__malariae_1", "P__ovale_1", "P__vivax_1", 
+    "Gametocytes_1", "PF_200_wbc_1", "PM_200_wbc_1", "PO_200_wbc_1", 
+    "PV_200_wbc_1", "Gametocytes_200_wbc_1", "Reader_3", "Microscopist_ID_2", 
+    "Form_Number_2", "Smear_Date_2", "P__falciparum_2", "P__malariae_2", 
+    "P__ovale_2", "P__vivax_2", "Gametocytes_2", "PF_200_wbc_2", 
+    "PM_200_wbc_2", "PO_200_wbc_2", "PV_200_wbc_2", "Gametocytes_200_wbc_2", 
+    "Reader_4", "Microscopist_ID_3", "Form_Number_3", "Smear_Date_3", 
+    "P__falciparum_3", "P__malariae_3", "P__ovale_3", "P__vivax_3", 
+    "Gametocytes_3", "PF_200_wbc_3", "PM_200_wbc_3", "PO_200_wbc_3", 
+    "PV_200_wbc_3", "Gametocytes_200_wbc_3", "Reader_5", "Microscopist_ID_4", 
+    "Form_Number_4", "Smear_Date_4", "P__falciparum_4", "P__malariae_4", 
+    "P__ovale_4", "P__vivax_4", "Gametocytes_4", "PF_200_wbc_4", 
+    "PM_200_wbc_4", "PO_200_wbc_4", "PV_200_wbc_4", "Gametocytes_200_wbc_4", 
+    "Slide_missing"
+)
+
+# Remove the specified columns
+passive_surv <- subset(passive_surv, select = -which(names(passive_surv) %in% columns_to_remove))
+
+# Check the updated structure of your dataframe
+str(passive_surv)
+
+```
+
+
+```{r}
+# Rename the columns with shorter names
+colnames(passive_surv) <- c(
+    "ID", "Event", "Inst", "Inst_Num", "Officer_ID", 
+    "Backache", "Chills", "Diarrhoea", "Fever", "Headache", 
+    "Jaundice", "Joint_pains", "Loss_of_appetite", "Nausea", 
+    "Severe_Malaise", "Vomiting", "Other_Symptoms", "Missing_Symptoms", 
+    "Specify_Symptoms", "Care_before", "Where_care", "Specify_clinic", 
+    "Med_Paracetamol", "Med_Artem_Lumefantrine", "Med_Artemether", 
+    "Med_Quinine_oral", "Med_Quinine_IM", "Med_Quinine_IV", "Med_Unknown", 
+    "Med_Other", "Med_Dihydroartemisinin", "Med_Combination_DHA", 
+    "Med_Sulfadoxine_Pyrimethamine", "Med_Chloroquine", "Specify_other_med", 
+    "Travel_outside", "Sleep_under_bednet", "Bednet_treatment", 
+    "Temperature", "RDT_Results", "PF", "PM", "PO", "PV", "GAM", 
+    "Smear_not_taken", "Hemoglobin", "Plasma_sample_taken", 
+    "Filter_paper_sample_taken", "Pregnancy_status", "Diagnosed_with_malaria", 
+    "Treatment_Artem_Lumefantrine", "Treatment_Artemether", 
+    "Treatment_Quinine_oral", "Treatment_Quinine_IM", "Treatment_Quinine_IV", 
+    "Treatment_Other", "Treatment_None", "Treatment_Dihydroartemisinin", 
+    "Treatment_Combination_DHA", "Treatment_Sulfadoxine_Pyrimethamine", 
+    "Treatment_Chloroquine", "Specify_other_treatment", "Complete"
+)
+
+# Check the updated column names
+colnames(passive_surv)
+
+```
+
+```{r}
+colnames(passive_surv)
+```
+
+
+```{r}
+# Frequency of malaria symptoms
+symptoms <- c("Backache", "Chills", "Diarrhoea", "Fever", "Headache", 
+              "Jaundice", "Joint_pains", "Loss_of_appetite", "Nausea", 
+              "Severe_Malaise", "Vomiting", "Other_Symptoms", "Missing_Symptoms")
+
+symptom_freq <- sapply(passive_surv[symptoms], table)
+
+
+
+# Display the results
+print(symptom_freq)
+
+```
+
+
+
+
+
+```{r}
+# Load required library
+library(ggplot2)
+
+# Create a data frame from the frequency results
+symptom_freq_df <- as.data.frame(symptom_freq)
+
+# Convert row names to a new column
+symptom_freq_df$Symptom <- rownames(symptom_freq_df)
+
+# Reshape the data frame for plotting
+symptom_freq_long <- tidyr::pivot_longer(symptom_freq_df, cols = -Symptom, names_to = "Status", values_to = "Frequency")
+
+# Plot a bar plot with black borders
+ggplot(symptom_freq_long, aes(x = Symptom, y = Frequency, fill = Status)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +  # Add black borders
+  labs(title = "Frequency of Malaria Symptoms", x = "Symptom", y = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Count occurrences of "Positive" and "Negative" in the PF column
+pf_counts <- table(passive_surv$PF)
+
+# Print the counts
+print(pf_counts)
+```
+
+
+```{r}
+# Load required libraries
+library(vcd)
+library(ggplot2)
+
+# Compute Cramer's V coefficient
+symptoms <- c("Backache", "Chills", "Diarrhoea", "Fever", "Headache", 
+              "Jaundice", "Joint_pains", "Loss_of_appetite", "Nausea", 
+              "Severe_Malaise", "Vomiting", "Other_Symptoms", "Missing_Symptoms")
+symptom_cramer_v <- matrix(0, nrow = length(symptoms), ncol = 1)
+
+for (i in 1:length(symptoms)) {
+  symptom_cramer_v[i, 1] <- assocstats(table(passive_surv[[symptoms[i]]], passive_surv$PF))$cramer
+}
+
+# Convert results to a data frame
+correlation_data <- data.frame(Symptom = symptoms, Cramer_V = symptom_cramer_v)
+
+# Visualize correlation using a bar plot
+ggplot(correlation_data, aes(x = reorder(Symptom, Cramer_V), y = Cramer_V)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  coord_flip() +
+  labs(title = "Association between Symptoms and Malaria Diagnosis (PF)",
+       x = "Symptom", y = "Cramer's V coefficient") +
+  theme_minimal()
+
+```
+
+Make a graph by merging with risk factors and passive survilleinec to get the visit date.
+PLot the graph  with x axis- year, y axis - count of individuals (Tak individuals per year, and if there are multiple entries in 1 year, take the last event by date). And different lines for the symptoms. "Just like exploratory data analysis in the shared folder".
+
+
+```{r}
+# Merging using base R, specifying different column names
+risk_passive <- merge(risk_factors, passive_surv, by.x = "Record.ID", by.y = "ID", all = TRUE)
+risk_passive
+```
+
+
+```{r}
+colnames(risk_passive, do.NULL=TRUE)
+```
+
+```{r}
+# Combine specified column names with the 'symptoms' variable
+# Correcting the column names
+columns_to_keep <- c("Record.ID", "Round", "Visit.date", symptoms)
+
+
+
+
+```
+
+```{r}
+# Subset the merged dataset to keep only the specified columns
+risk_passive_data <- risk_passive[, columns_to_keep]
+```
+
+```{r}
+risk_passive_data
+```
+
+
+
+```{r}
+# Look at the first few entries of the Visit.date column to understand the formatting
+head(risk_passive_data$Visit.date)
+
+```
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+
+# No need to convert Visit.date as it's already in the default yyyy-mm-dd format.
+# Extract the year from the Visit.date
+risk_passive_data$Year <- year(as.Date(risk_passive_data$Visit.date))
+
+# Define the symptoms vector
+symptoms <- c("Backache", "Chills", "Diarrhoea", "Fever", "Headache", 
+              "Jaundice", "Joint_pains", "Loss_of_appetite", "Nausea", 
+              "Severe_Malaise", "Vomiting" )
+
+# Get the last entry per individual per year
+risk_passive_data_last <- risk_passive_data %>%
+  arrange(Record.ID, Year, Visit.date) %>%
+  group_by(Record.ID, Year) %>%
+  summarize(across(all_of(symptoms), ~last(.x[.x != ""])), .groups = 'drop')
+
+# Now count the number of "Checked" responses for each symptom per year
+symptom_counts <- risk_passive_data_last %>%
+  pivot_longer(cols = all_of(symptoms), names_to = "Symptom", values_to = "Status") %>%
+  group_by(Year, Symptom) %>%
+  summarize(Count = sum(Status == "Checked", na.rm = TRUE), .groups = 'drop')
+
+# Plot the data
+ggplot(symptom_counts, aes(x = Year, y = Count, color = Symptom, group = Symptom)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Count of Individuals with Symptoms by Year",
+       x = "Year",
+       y = "Count of Individuals") +
+  theme_minimal()
+
+```
+
+```{r}
+# Assuming symptom_counts is your final summarized data frame
+
+# Display the counts of checked symptoms per year
+print(symptom_counts)
+
+```
+
+
+```{r}
+library(kableExtra)
+
+library(knitr)
+
+# Print the table with 'kable'
+kable(symptom_counts, format = "html", caption = "Count of Symptoms per Year") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+```{r}
+# Adjust plot size - this will depend on your output device
+# For example, for a png device you would use:
+# png("output.png", width = 1000, height = 600)
+
+ggplot(symptom_counts, aes(x = Year, y = Count, color = Symptom, group = Symptom)) +
+  geom_line(size = 1, aes(linetype = Symptom)) +  # Different line types for each symptom
+  geom_point(size = 2, shape = 21, fill = "white") +  # Add points to the lines
+  scale_color_brewer(palette = "Set1") +  # Use a color palette that is visually distinct
+  theme_minimal() +
+  theme(legend.position = "bottom") +  # Move legend to the bottom
+  labs(title = "Count of Individuals with Symptoms by Year",
+       x = "Year",
+       y = "Count of Individuals") +
+  guides(colour = guide_legend(override.aes = list(size=4)))  # Ensure that the legend is readable
+
+# Turn off the device if you're using one
+# dev.off()
+
+```
+
+```{r}
+# First, ensure that Year is a numeric vector without NA values
+symptom_counts <- symptom_counts %>% filter(!is.na(Year))
+
+# Then, find the range of years without NA values
+year_range <- range(symptom_counts$Year, na.rm = TRUE)
+
+# Now, use this range in your ggplot code
+ggplot(symptom_counts, aes(x = Year, y = Count, color = Symptom, group = Symptom)) +
+  geom_line(aes(size = Count)) +  # Line thickness based on Count
+  geom_point(size = 2, shape = 21, fill = "white") +
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  scale_size(range = c(0.5, 3), guide = FALSE) +  # Set the range for size scale and remove the legend for size
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals with Symptoms by Year",
+       x = "Year",
+       y = "Count of Individuals") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+# If you are outputting to a file, don't forget to set the dimensions appropriately and close the device with dev.off()
+
+
+```
+```{r}
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+# Assuming symptom_counts is prepared as described
+
+# Convert the symptom_counts dataframe to include hover text with detailed information
+symptom_counts <- symptom_counts %>%
+  mutate(Hover_Info = paste("Year:", Year, "<br>Symptom:", Symptom, "<br>Count:", Count))
+
+# Plot the data using Plotly with enhanced hover information
+p <- plot_ly(data = symptom_counts, x = ~Year, y = ~Count, color = ~Symptom, type = 'scatter', mode = 'lines+markers',
+             text = ~Hover_Info, hoverinfo = 'text',
+             marker = list(size = 10, line = list(width = 2, color = 'rgba(0, 0, 0, 0.2)')),
+             line = list(shape = 'linear')) %>%
+  layout(title = 'Count of Individuals with Symptoms by Year',
+         xaxis = list(title = 'Year', dtick = 1),
+         yaxis = list(title = 'Count of Individuals'),
+         hovermode = 'closest',
+         legend = list(orientation = 'h', x = 0.5, xanchor = 'center', y = -0.3))
+
+# Print the Plotly plot
+p
+
+
+```
+
+```{r}
+#risk_factors, bednet, travel history, visit_date 
+# Combine specified column names with the 'symptoms' variable
+# Correcting the column names
+
+columns_to_keep <- c("Record.ID", "Round", "Visit.date","Risk.factors","Bednet....Did.you.sleep.under.a.bednet.last.night.", "Person.Treated.for.Malaria.....Have.you.been.treated.for.malaria.in.the.past.year.other.than.at.KIP.KAP.Health.Centre.","Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography."  )
+
+
+
+
+```
+
+```{r}
+# Subset the merged dataset to keep only the specified columns
+risk_passive_combined <- risk_passive[, columns_to_keep]
+```
+
+```{r}
+risk_passive_combined
+```
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r}
+
+
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Prepare a function to get the last entry per individual per year
+get_last_entry_per_year <- function(data, column_name) {
+  data %>%
+    arrange(Record.ID, Year, Visit.date) %>%
+    group_by(Record.ID, Year) %>%
+    summarize(Value = last(na.omit(get(column_name))), .groups = 'drop')
+}
+
+# Apply the function for Risk.factors
+risk_factors_last <- get_last_entry_per_year(risk_passive_combined, "Risk.factors")
+
+# Now count the number of "Yes" responses for Risk factors per year
+risk_factors_count <- risk_factors_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE), .groups = 'drop')
+
+# Plot the data for Risk factors
+ggplot(risk_factors_count, aes(x = Year)) +
+  geom_line(aes(y = Count_Yes, color = "Risk Factors - Yes")) +
+  geom_line(aes(y = Count_No, color = "Risk Factors - No")) +
+  labs(title = "Count of Individuals with Risk Factors by Year",
+       x = "Year",
+       y = "Count of Individuals") +
+  scale_color_manual(values = c("Risk Factors - Yes" = "green", "Risk Factors - No" = "red")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+```{r}
+
+
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Define a function to process and summarize the data
+process_summary <- function(data, column_name) {
+  data %>%
+    arrange(Record.ID, Year, Visit.date) %>%
+    group_by(Record.ID, Year) %>%
+    summarize(Last_Value = last(na.omit(get(column_name))), .groups = 'drop') %>%
+    group_by(Year) %>%
+    summarize(Count_Yes = sum(Last_Value == "Yes", na.rm = TRUE),
+              Count_No = sum(Last_Value == "No", na.rm = TRUE), .groups = 'drop') %>%
+    pivot_longer(cols = c("Count_Yes", "Count_No"), names_to = "Response", values_to = "Count") %>%
+    mutate(Variable = column_name)
+}
+
+# Apply the function to each variable and combine the results
+all_summaries <- bind_rows(
+  process_summary(risk_passive_combined, "Risk.factors"),
+  process_summary(risk_passive_combined, "Bednet....Did.you.sleep.under.a.bednet.last.night."),
+  process_summary(risk_passive_combined, "Person.Treated.for.Malaria.....Have.you.been.treated.for.malaria.in.the.past.year.other.than.at.KIP.KAP.Health.Centre."),
+  process_summary(risk_passive_combined, "Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.")
+)
+
+# Plot the data with facet_wrap
+ggplot(all_summaries, aes(x = Year, y = Count, fill = Response)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~ Variable, scales = "free_y") +  # Separate plots for each variable, with independent y scales
+  labs(title = "Count of Individuals by Response and Year",
+       x = "Year",
+       y = "Count of Individuals") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_fill_brewer(palette = "Set1")  # Use a color palette that is visually distinct
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Ensure that Year is a numeric vector without NA values
+risk_factors_count <- risk_factors_count %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(risk_factors_count$Year, na.rm = TRUE)
+
+# Combine both counts into a long format for plotting
+risk_factors_long <- risk_factors_count %>%
+  pivot_longer(cols = c("Count_Yes", "Count_No"), names_to = "Risk_Response", values_to = "Count")
+
+# Plot the data using a line thickness based on the count
+ggplot(risk_factors_long, aes(x = Year, y = Count, color = Risk_Response, group = Risk_Response)) +
+  geom_line(aes(size = Count)) +  # Line thickness based on Count
+  geom_point(size = 2, shape = 21, fill = "white") +
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  scale_size(range = c(0.5, 3), guide = FALSE) +  # Set the range for size scale and remove the legend for size
+  scale_color_manual(values = c("Risk Factors - Yes" = "green", "Risk Factors - No" = "red")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals with Risk Factors by Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Risk Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Ensure that Year is a numeric vector without NA values
+risk_factors_count <- risk_factors_count %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(risk_factors_count$Year, na.rm = TRUE)
+
+# Combine both counts into a long format for plotting
+risk_factors_long <- risk_factors_count %>%
+  pivot_longer(cols = c("Count_Yes", "Count_No"), names_to = "Risk_Response", values_to = "Count")
+
+# Define colors for the lines
+colors <- c("Risk Factors - Yes" = "green", "Risk Factors - No" = "red")
+
+# Plot the data using a line thickness based on the count
+ggplot(risk_factors_long, aes(x = Year, y = Count, color = Risk_Response, group = Risk_Response)) +
+  geom_line(aes(size = Count)) +  # Line thickness based on Count
+  geom_point(size = 2, shape = 21, fill = "white") +
+  geom_text(aes(label = Count), vjust = -0.5, size = 3) +  # Add text labels for counts
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  scale_size(range = c(0.5, 3), guide = FALSE) +  # Set the range for size scale and remove the legend for size
+  scale_color_manual(values = colors) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals with Risk Factors by Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Risk Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+```
+
+```{r}
+# Summarize the number of 'No' responses for risk factors per year
+risk_factors_no_count <- risk_factors_last %>%
+  group_by(Year) %>%
+  summarize(Count_No = sum(Value == "No", na.rm = TRUE), .groups = 'drop')
+
+# View the count of 'No' responses
+print(risk_factors_no_count)
+
+```
+```{r}
+# Calculate the total number of 'No' responses across all years
+total_no_responses <- sum(risk_factors_no_count$Count_No, na.rm = TRUE)
+print(total_no_responses)
+
+```
+```{r}
+
+
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Prepare a function to get the last entry per individual per year
+# Now treating blanks as 'No'
+get_last_entry_per_year <- function(data, column_name) {
+  data %>%
+    arrange(Record.ID, Year, Visit.date) %>%
+    group_by(Record.ID, Year) %>%
+    summarize(Value = if_else(last(get(column_name)) == "", "No", last(get(column_name))), .groups = 'drop')
+}
+
+# Apply the function for Risk.factors
+risk_factors_last <- get_last_entry_per_year(risk_passive_combined, "Risk.factors")
+
+# Now count the number of "Yes" responses for Risk factors per year
+risk_factors_count <- risk_factors_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE), .groups = 'drop')
+
+# Combine both counts into a long format for plotting
+risk_factors_long <- risk_factors_count %>%
+  pivot_longer(cols = c("Count_Yes", "Count_No"), names_to = "Risk_Response", values_to = "Count")
+
+# Ensure that Year is a numeric vector without NA values
+risk_factors_long <- risk_factors_long %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(risk_factors_long$Year, na.rm = TRUE)
+
+```
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Assuming risk_factors_count is already created and year_range is defined
+
+# Combine both counts into a long format for plotting
+risk_factors_long <- risk_factors_count %>%
+  pivot_longer(cols = c("Count_Yes", "Count_No"), names_to = "Risk_Response", values_to = "Count") %>%
+  mutate(Risk_Response = factor(Risk_Response, levels = c("Count_Yes", "Count_No")))
+
+# Define the colors for 'Yes' and 'No' responses
+colors <- c("Count_Yes" = "green", "Count_No" = "red")
+
+# Plot the data using a line thickness based on the count
+ggplot(risk_factors_long, aes(x = Year, y = Count, color = Risk_Response, group = Risk_Response)) +
+  geom_line(aes(size = Count)) +  # Line thickness based on Count
+  geom_point(size = 2, shape = 21, fill = "white") +
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3) +  # Add count labels in black
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  scale_size(range = c(0.5, 3), guide = FALSE) +  # Set the range for size scale and remove the legend for size
+  scale_color_manual(values = colors) +  # Assign colors to 'Yes' and 'No' responses
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals with Risk Factors by Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Risk Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+```
+```{r}
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Prepare a function to get the last entry per individual per year
+get_last_entry_per_year <- function(data, column_name) {
+  data %>%
+    arrange(Record.ID, Year, Visit.date) %>%
+    group_by(Record.ID, Year) %>%
+    summarize(Value = if_else(is.na(last(get(column_name))) | last(get(column_name)) == "", "Blank", last(get(column_name))), .groups = 'drop')
+}
+
+# Apply the function for the Bednet usage column
+bednet_last <- get_last_entry_per_year(risk_passive_combined, "Bednet....Did.you.sleep.under.a.bednet.last.night.")
+
+# Now count the number of each response for Bednet usage per year
+bednet_count <- bednet_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE),
+            Count_Sometimes = sum(Value == "Sometimes", na.rm = TRUE),
+            Count_Unknown = sum(Value == "Unknown", na.rm = TRUE),
+            Count_Blank = sum(Value == "Blank", na.rm = TRUE), .groups = 'drop')
+
+# Combine all counts into a long format for plotting
+bednet_long <- bednet_count %>%
+  pivot_longer(cols = starts_with("Count_"), names_to = "Bednet_Use", values_to = "Count")
+
+# Define the colors for 'Yes', 'No', 'Sometimes', 'Unknown', and 'Blank' responses
+colors <- c("Count_Yes" = "green", "Count_No" = "red", "Count_Sometimes" = "blue", "Count_Unknown" = "orange", "Count_Blank" = "grey")
+
+# Ensure that Year is a numeric vector without NA values
+bednet_long <- bednet_long %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(bednet_long$Year, na.rm = TRUE)
+
+# Plot the data using a line thickness based on the count
+ggplot(bednet_long, aes(x = Year, y = Count, color = Bednet_Use, group = Bednet_Use)) +
+  geom_line(aes(size = Count)) +  # Line thickness based on Count
+  geom_point(size = 2, shape = 21, fill = "white") +
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3) +  # Add count labels in black
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  scale_size(range = c(0.5, 3), guide = FALSE) +  # Set the range for size scale and remove the legend for size
+  scale_color_manual(values = colors) +  # Assign colors to different responses
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals by Bednet Usage per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Bednet Use") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+```
+
+```{r}
+library(ggplot2)
+
+# Assuming bednet_long is already defined and ready for plotting
+
+# Plot the data using a line thickness based on the count
+p <- ggplot(bednet_long, aes(x = Year, y = Count, group = Bednet_Use)) +
+  geom_line(aes(color = Bednet_Use, linetype = Bednet_Use), size = 1) +  # Use color and linetype aesthetic for line
+  geom_point(aes(color = Bednet_Use, shape = Bednet_Use), size = 3) +  # Use color and shape aesthetic for points
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3, check_overlap = TRUE) +  # Add count labels in black
+  scale_color_manual(values = colors) +  # Assign colors to different responses
+  scale_shape_manual(values = c(16, 17, 18, 19, 15)) +  # Assign shapes to different responses
+  scale_linetype_manual(values = c("solid", "dotted", "dotdash", "twodash", "longdash")) +  # Assign line types to different responses
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +  # Continuous years
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals by Bednet Usage per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Bednet Use",
+       shape = "Bednet Use",
+       linetype = "Bednet Use") +
+  guides(color = guide_legend(override.aes = list(size = 4)))  # Ensure that the legend is readable
+
+# Print the plot
+print(p)
+
+```
+```{r}
+library(ggplot2)
+library(plotly)
+
+# Assuming bednet_long is already defined and ready for plotting
+
+# Define the colors and the year range if you haven't already
+colors <- c("Count_Yes" = "green", "Count_No" = "red", "Count_Sometimes" = "blue", "Count_Unknown" = "orange", "Count_Blank" = "grey")
+year_range <- range(bednet_long$Year, na.rm = TRUE)
+
+# Create the ggplot object
+p <- ggplot(bednet_long, aes(x = Year, y = Count, group = Bednet_Use)) +
+  geom_line(aes(color = Bednet_Use, linetype = Bednet_Use), size = 1) + 
+  geom_point(aes(color = Bednet_Use, shape = Bednet_Use), size = 3) + 
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3, check_overlap = TRUE) + 
+  scale_color_manual(values = colors) +  
+  scale_shape_manual(values = c(16, 17, 18, 19, 15)) +  
+  scale_linetype_manual(values = c("solid", "dotted", "dotdash", "twodash", "longdash")) +  
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals by Bednet Usage per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Bednet Use",
+       shape = "Bednet Use",
+       linetype = "Bednet Use") +
+  guides(color = guide_legend(override.aes = list(size = 4))) 
+
+# Convert the ggplot object to a plotly object for interactivity
+p_plotly <- ggplotly(p)
+
+# Print the interactive plot to the viewer
+p_plotly
+
+```
+
+
+```{r}
+# First, install plotly if you haven't already
+# install.packages("plotly")
+
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(plotly)
+
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Apply the function for the malaria treatment column
+malaria_treatment_last <- get_last_entry_per_year(risk_passive_combined, "Person.Treated.for.Malaria.....Have.you.been.treated.for.malaria.in.the.past.year.other.than.at.KIP.KAP.Health.Centre.")
+
+# Now count the number of each response for malaria treatment per year
+malaria_treatment_count <- malaria_treatment_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE),
+            Count_Unknown = sum(Value == "Unknown", na.rm = TRUE),
+            Count_Blank = sum(Value == "Blank", na.rm = TRUE), .groups = 'drop')
+
+# Combine all counts into a long format for plotting
+malaria_treatment_long <- malaria_treatment_count %>%
+  pivot_longer(cols = starts_with("Count_"), names_to = "Treatment_Response", values_to = "Count")
+
+# Define the colors for 'Yes', 'No', 'Unknown', and 'Blank' responses
+colors <- c("Count_Yes" = "green", "Count_No" = "red", "Count_Unknown" = "orange", "Count_Blank " = "grey")
+
+# Ensure that Year is a numeric vector without NA values
+malaria_treatment_long <- malaria_treatment_long %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(malaria_treatment_long$Year, na.rm = TRUE)
+
+# Create the ggplot object
+p <- ggplot(malaria_treatment_long, aes(x = Year, y = Count, group = Treatment_Response)) +
+  geom_line(aes(color = Treatment_Response, linetype = Treatment_Response), size = 1) + 
+  geom_point(aes(color = Treatment_Response, shape = Treatment_Response), size = 3) + 
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3, check_overlap = TRUE) + 
+  scale_color_manual(values = colors) +  
+  scale_shape_manual(values = c(16, 17, 18, 19)) +  
+  scale_linetype_manual(values = c("solid", "dotted", "dotdash", "longdash")) +  
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals Treated for Malaria per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Treatment Response",
+       shape = "Treatment Response",
+       linetype = "Treatment Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))
+
+# Convert the ggplot object to a plotly object for interactivity
+p_plotly <- ggplotly(p)
+
+# Print the interactive plot to the viewer
+p_plotly
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(plotly)
+
+# Extract the year from the Visit.date
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Prepare a function to get the last entry per individual per year, treating empty strings as "Blank"
+get_last_entry_per_year <- function(data, column_name) {
+  data %>%
+    arrange(Record.ID, Year, Visit.date) %>%
+    group_by(Record.ID, Year) %>%
+    summarize(Value = if_else(last(get(column_name)) == "", "Blank", last(get(column_name))), .groups = 'drop')
+}
+
+# Apply the function for the travel outside Nandi County column
+travel_last <- get_last_entry_per_year(risk_passive_combined, "Traveled....Have.you.traveled.outside.Nandi.County.since.the.last.Demography.")
+
+# Now count the number of each response for travel per year
+travel_count <- travel_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE),
+            Count_Unknown = sum(Value == "Unknown", na.rm = TRUE),
+            Count_Blank = sum(Value == "Blank", na.rm = TRUE), .groups = 'drop')
+
+# Combine all counts into a long format for plotting
+travel_long <- travel_count %>%
+  pivot_longer(cols = starts_with("Count_"), names_to = "Travel_Response", values_to = "Count")
+
+# Define the colors for 'Yes', 'No', 'Unknown', and 'Blank' responses
+colors <- c("Count_Yes" = "green", "Count_No" = "red", "Count_Unknown" = "orange", "Count_Blank" = "grey")
+
+# Ensure that Year is a numeric vector without NA values
+travel_long <- travel_long %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(travel_long$Year, na.rm = TRUE)
+
+# Create the ggplot object
+p <- ggplot(travel_long, aes(x = Year, y = Count, group = Travel_Response)) +
+  geom_line(aes(color = Travel_Response, linetype = Travel_Response), size = 1) + 
+  geom_point(aes(color = Travel_Response, shape = Travel_Response), size = 3) + 
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3, check_overlap = TRUE) + 
+  scale_color_manual(values = colors) +  
+  scale_shape_manual(values = c(16, 17, 18, 19)) +  
+  scale_linetype_manual(values = c("solid", "dotted", "dotdash", "longdash")) +  
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals Who Traveled Outside Nandi County per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Travel Response",
+       shape = "Travel Response",
+       linetype = "Travel Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))
+
+# Convert the ggplot object to a plotly object for interactivity
+p_plotly <- ggplotly(p)
+
+# Print the interactive plot to the viewer
+p_plotly
+
+```
+
+```{r}
+
+
+# Assuming risk_passive_combined is your dataframe
+risk_passive_combined$Year <- year(as.Date(risk_passive_combined$Visit.date))
+
+# Apply the function for the malaria treatment column
+malaria_treatment_last <- get_last_entry_per_year(risk_passive_combined, "Person.Treated.for.Malaria.....Have.you.been.treated.for.malaria.in.the.past.year.other.than.at.KIP.KAP.Health.Centre.")
+
+# Now count the number of each response for malaria treatment per year
+malaria_treatment_count <- malaria_treatment_last %>%
+  group_by(Year) %>%
+  summarize(Count_Yes = sum(Value == "Yes", na.rm = TRUE),
+            Count_No = sum(Value == "No", na.rm = TRUE),
+            Count_Unknown = sum(Value == "Unknown", na.rm = TRUE),
+            Count_Blank = sum(Value == "", na.rm = TRUE), .groups = 'drop') # Adjusted to match blanks
+
+# Combine all counts into a long format for plotting
+malaria_treatment_long <- malaria_treatment_count %>%
+  pivot_longer(cols = starts_with("Count_"), names_to = "Treatment_Response", values_to = "Count")
+
+# Define the colors for 'Yes', 'No', 'Unknown', and 'Blank' responses
+colors <- c("Count_Yes" = "green", "Count_No" = "red", "Count_Unknown" = "orange", "Count_Blank" = "grey") # Fixed the typo
+
+# Ensure that Year is a numeric vector without NA values
+malaria_treatment_long <- malaria_treatment_long %>% filter(!is.na(Year))
+
+# Find the range of years without NA values
+year_range <- range(malaria_treatment_long$Year, na.rm = TRUE)
+
+# Create the ggplot object
+p <- ggplot(malaria_treatment_long, aes(x = Year, y = Count, group = Treatment_Response)) +
+  geom_line(aes(color = Treatment_Response, linetype = Treatment_Response), size = 1) + 
+  geom_point(aes(color = Treatment_Response, shape = Treatment_Response), size = 3) + 
+  geom_text(aes(label = Count), vjust = -0.5, color = "black", size = 3, check_overlap = TRUE) + 
+  scale_color_manual(values = colors) +  
+  scale_shape_manual(values = c(16, 17, 18, 19)) +  
+  scale_linetype_manual(values = c("solid", "dotted", "dotdash", "longdash")) +  
+  scale_x_continuous(breaks = seq(from = year_range[1], to = year_range[2], by = 1)) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Count of Individuals Treated for Malaria per Year",
+       x = "Year",
+       y = "Count of Individuals",
+       color = "Treatment Response",
+       shape = "Treatment Response",
+       linetype = "Treatment Response") +
+  guides(color = guide_legend(override.aes = list(size = 4)))
+
+# Convert the ggplot object to a plotly object for interactivity
+p_plotly <- ggplotly(p)
+
+# Print the interactive plot to the viewer
+p_plotly
+
+
+```
+
